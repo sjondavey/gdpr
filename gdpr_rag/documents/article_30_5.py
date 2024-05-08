@@ -1,21 +1,21 @@
 import pandas as pd
-from regulations_rag.regulation_reader import  load_regulation_data_from_files
-from gdpr_rag.document import Document
-from gdpr_rag.empty_reference_checker import EmptyReferenceChecker
+from regulations_rag.regulation_reader import  load_csv_data
+from regulations_rag.document import Document
+
+
+from regulations_rag.reference_checker import EmptyReferenceChecker
 
 
 class Article_30_5(Document):
-    def __init__(self):
+    def __init__(self, path_to_manual_as_csv_file = "./inputs/documents/article_30_5.csv"):
         reference_checker = EmptyReferenceChecker()
 
-        path_to_manual_as_csv_file = "./inputs/documents/article_30_5.csv"
-        path_to_additional_manual_as_csv_file = ""
-
-        document_as_df = load_regulation_data_from_files(path_to_manual_as_csv_file = path_to_manual_as_csv_file, 
-                                                         path_to_additional_manual_as_csv_file = path_to_additional_manual_as_csv_file)
+        self.document_as_df = load_csv_data(path_to_file = path_to_manual_as_csv_file)
 
         document_name = "WORKING PARTY 29 POSITION PAPER on the derogations from the obligation to maintain records of processing activities pursuant to Article 30(5) GDPR"
-        super().__init__(document_name, document_as_df = document_as_df, reference_checker=reference_checker)
+        super().__init__(document_name, reference_checker=reference_checker)
+        if not self.check_columns():
+            raise AttributeError(f"The input csv file for the Article_30_5 class does not have the correct column headings")
 
     def check_columns(self):
         expected_columns = ["section_reference", "heading", "text"] 
@@ -27,10 +27,14 @@ class Article_30_5(Document):
                 return False
         return True
 
-
-    def get_text(self, section_reference):        
-        return self.document_as_df.iloc[0]['text']
-
+    def get_text(self, section_reference):
+        if section_reference == "" or section_reference == "all":
+            return self.document_as_df.iloc[0]['text']
+        else:
+            return ""
 
     def get_heading(self, section_reference):
-        return "Entire document"
+        if section_reference == "" or section_reference == "all":
+            return "Entire document"
+        else:
+            return ""

@@ -11,7 +11,7 @@ from regulations_rag.standard_regulation_index import load_parquet_data
 # from regulations_rag.standard_regulation_index import load_index_data_from_files, StandardRegulationIndex, load_parquet_data, save_parquet_data
 from regulations_rag.rerank import RerankAlgos
 
-from gdpr_rag.corpus import Corpus
+from regulations_rag.corpus import Corpus
 from gdpr_rag.corpus_chat import CorpusChat
 from gdpr_rag.corpus_index import GDPRCorpusIndex
 

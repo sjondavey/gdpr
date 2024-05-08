@@ -1,23 +1,10 @@
 import pytest
-from gdpr_rag.corpus import find_class_names_in_files, Corpus
-
-def test_find_class_names_in_files():
-    directory = "./gdpr_rag/documents/"
-    class_names_dict = find_class_names_in_files(directory)
-    class_keys = set(class_names_dict.keys())
-    class_names = set(class_names_dict.values())
-
-    expected_class_keys = {"gdpr", "article_30_5"}
-    expected_class_names = {"GDPR", "Article_30_5"}
-
-    assert class_keys == expected_class_keys
-    assert class_names == expected_class_names
+from gdpr_rag.gdpr_corpus import GDPRCorpus
 
 
+class TestGDPRCorpus():
 
-class TestCorpus():
-
-    corpus = Corpus("./gdpr_rag/documents/")
+    corpus = GDPRCorpus("./gdpr_rag/documents/")
 
     def test_construction(self):
         doc = self.corpus.get_document('GDPR')

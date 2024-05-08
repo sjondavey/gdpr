@@ -1,9 +1,10 @@
 import re
 import pandas as pd
-from regulations_rag.regulation_reader import  load_regulation_data_from_files
-from gdpr_rag.document import Document
+from regulations_rag.regulation_reader import  load_csv_data
+from regulations_rag.document import Document
 from regulations_rag.reference_checker import ReferenceChecker
-from gdpr_rag.multi_reference_checker import MultiReferenceChecker
+
+from regulations_rag.reference_checker import MultiReferenceChecker
 
 def extract_footnotes(text):
     lines = text.split('\n')
@@ -30,11 +31,13 @@ class Article_47_BCR(Document):
 
         path_to_additional_manual_as_csv_file = ""
 
-        document_as_df = load_regulation_data_from_files(path_to_manual_as_csv_file = path_to_manual_as_csv_file, 
-                                                         path_to_additional_manual_as_csv_file = path_to_additional_manual_as_csv_file)
+        self.document_as_df = load_csv_data(path_to_file = path_to_manual_as_csv_file)
 
         document_name = "Recommendations 1/2022 on the Application for Approval and on the elements and principles to be found in Controller Binding Corporate Rules"
-        super().__init__(document_name, document_as_df = document_as_df, reference_checker=reference_checker)
+        super().__init__(document_name, reference_checker=reference_checker)
+        if not self.check_columns():
+            raise AttributeError(f"The input csv file for the Article_47_BCR class does not have the correct column headings")
+
 
     def check_columns(self):
         expected_columns = ["section", "point", "section_reference", "heading", "text"] 

@@ -22,9 +22,9 @@ from regulations_rag.embeddings import get_ada_embedding, \
                            num_tokens_from_string,  \
                            num_tokens_from_messages
 
-from gdpr_rag.rerank import RerankAlgos, rerank
+from regulations_rag.rerank import RerankAlgos, rerank
 
-from gdpr_rag.corpus import Corpus
+from regulations_rag.corpus import Corpus
 
 logger = logging.getLogger(__name__)
 
