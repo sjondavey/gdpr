@@ -10,7 +10,7 @@ class GDPRReader(RegulationReader):
         reference_checker = GDPRReferenceChecker()
 
 
-        path_to_manual_as_csv_file = "./inputs/gdpr.csv"
+        path_to_manual_as_csv_file = "./inputs/documents/gdpr.csv"
         path_to_additional_manual_as_csv_file = ""
 
         self.regulation_df = load_regulation_data_from_files(path_to_manual_as_csv_file = path_to_manual_as_csv_file, 
@@ -37,24 +37,28 @@ class GDPRReader(RegulationReader):
 
 
     def get_regulation_detail(self, section_reference):
-        if not self.reference_checker.is_valid(section_reference):
-            raise AttributeError(f"{section_reference} is not a valid index")
 
-        pattern = r'^\d{1,2}$' # there is a special case here were if I ask for "2" for example, the "startswith()" query will also include 21, 22 etc
-        if re.match(pattern, section_reference):
-            tmp1 = self.regulation_df[self.regulation_df["section_reference"].str.startswith(section_reference + "(")] # use startswith to get children as well
-            tmp2 = self.regulation_df[self.regulation_df["section_reference"] == section_reference] 
-            subframe = pd.concat([tmp1, tmp2]).sort_index()
+        if section_reference == "":
+            subframe = self.regulation_df
         else:
-            subframe = self.regulation_df[self.regulation_df["section_reference"].str.startswith(section_reference)] # use startswith to get children as well
-        parent_reference = self.reference_checker.get_parent_reference(section_reference)
-        while parent_reference:
-            parent_df = self.regulation_df[self.regulation_df["section_reference"] == (parent_reference)] # use equality to get only the lines for the parent
-            subframe = pd.concat([subframe, parent_df]).sort_index()
-            parent_reference = self.reference_checker.get_parent_reference(parent_reference)
+            # if not self.reference_checker.is_valid(section_reference):
+            #     raise AttributeError(f"{section_reference} is not a valid index")
 
-        if len(subframe) == 0:
-            return ""
+            pattern = r'^\d{1,2}$' # there is a special case here were if I ask for "2" for example, the "startswith()" query will also include 21, 22 etc
+            if re.match(pattern, section_reference):
+                tmp1 = self.regulation_df[self.regulation_df["section_reference"].str.startswith(section_reference + "(")] # use startswith to get children as well
+                tmp2 = self.regulation_df[self.regulation_df["section_reference"] == section_reference] 
+                subframe = pd.concat([tmp1, tmp2]).sort_index()
+            else:
+                subframe = self.regulation_df[self.regulation_df["section_reference"].str.startswith(section_reference)] # use startswith to get children as well
+            parent_reference = self.reference_checker.get_parent_reference(section_reference)
+            while parent_reference:
+                parent_df = self.regulation_df[self.regulation_df["section_reference"] == (parent_reference)] # use equality to get only the lines for the parent
+                subframe = pd.concat([subframe, parent_df]).sort_index()
+                parent_reference = self.reference_checker.get_parent_reference(parent_reference)
+
+            if len(subframe) == 0:
+                return ""
 
         formatted_regulation = ""
         # if include_section_and_chapter:
@@ -62,8 +66,8 @@ class GDPRReader(RegulationReader):
         #     if subframe.iloc[0]['section_number']:
         #         formatted_regulation = formatted_regulation + f"Section {subframe.iloc[0]['section_number']} {subframe.iloc[0]['section_heading']}\n"  
 
-        #formatted_regulation = formatted_regulation + f"Article {subframe.iloc[0]['article_number']} {subframe.iloc[0]['article_heading']}\n"  
-        formatted_regulation = formatted_regulation + f"{subframe.iloc[0]['article_number']} {subframe.iloc[0]['article_heading']}\n"  
+        formatted_regulation = formatted_regulation + f"Article {subframe.iloc[0]['article_number']} {subframe.iloc[0]['article_heading']}\n"  
+        #formatted_regulation = formatted_regulation + f"{subframe.iloc[0]['article_number']} {subframe.iloc[0]['article_heading']}\n"  
         for index, row in subframe.iterrows():
             line = row["content"] + "\n"
             if row["minor_reference"]:

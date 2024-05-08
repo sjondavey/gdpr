@@ -214,7 +214,7 @@ class TestGDPRChat:
 #         assert output_string == expected_text
 
     def test__create_system_message(self):
-        short_pattern = r'^Article (\d{1,2})(?:\((\d{1,2})\))?(?:\(([a-z])\))?'
+        short_pattern = r'(\d{1,2})(?:\((\d{1,2})\))?(?:\(([a-z])\))?'
         expected_message = f"You are answering questions for a Controller based only on the sections from the General Data Protection Regulation (GDPR) that are provided. Please use the manual's index pattern when referring to sections: {short_pattern}. You have three options:\n\
 1) Answer the question. Preface an answer with the tag 'ANSWER:'. End the answer with 'Reference: ' and a comma separated list of the section you used to answer the question if you used any.\n\
 2) Request additional documentation. If, in the body of the sections provided, there is a reference to another section of the Manual that is directly relevant and not already provided, respond with the word 'SECTION:' followed by the full section reference.\n\

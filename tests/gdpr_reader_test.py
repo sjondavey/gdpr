@@ -20,6 +20,6 @@ def test_get_regulation_detail():
 
 def test_get_regulation_heading():
     response = test_reader.get_regulation_heading('14(1)(a)')
-    expected_response = 'Chapter III Rights of the data subject\nSection 2 Information and access to personal data\nArticle 14 Information to be provided where personal data have not been obtained from the data subject\n'
+    expected_response = 'Chapter III Rights of the data subject. Section 2 Information and access to personal data. Article 14 Information to be provided where personal data have not been obtained from the data subject.'
     assert response == expected_response
 

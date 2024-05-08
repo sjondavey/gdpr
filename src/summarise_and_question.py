@@ -5,7 +5,7 @@ system_content = "You are summarising Articles from the General Data Protection 
 
 
 
-system_content_question = "You helping to prepare a set of Frequently Asked Questions (FAQs) for the Article from the General Data Protection Regulation (GDPR) provided for a controller. The questions should be high level to cover the different themes in the answer. Where possible replace defined terms like 'data subject' with 'individual' or 'controller' with 'you' (i.e. with less formal terms instead of definitions). The questions should not focus on details like 'Which Article says ...'. They also should try to avoid statements like 'According to GDPR' because that context can be taken for granted. \n\
+system_content_question = "You helping to prepare a set of Frequently Asked Questions (FAQs) for the Article from the General Data Protection Regulation (GDPR) provided for a controller. The questions should be high level to cover the different themes in the answer. Where possible replace defined terms like 'data subject' with 'individual' or 'controller' with 'you' (i.e. with less formal terms instead of definitions). The questions should not focus on details like 'Which Article says ...'. They also should try to avoid statements like 'According to GDPR' because that context can be taken for granted. When creating questions, please use acronyms but also provide the expanded version of the acronym in every question because they will be used separately so all context needs to be available in each. \n\
 List your questions as a pipe delimited string. Please use UK English. Below are examples to guide you. \n\
 #### Example 1 Input\n\
 Article 1 Subject-matter and objectives\n\
@@ -13,7 +13,7 @@ Article 1 Subject-matter and objectives\n\
     2. This Regulation protects fundamental rights and freedoms of natural persons and in particular their right to the protection of personal data.\n\
     3. The free movement of personal data within the Union shall be neither restricted nor prohibited for reasons connected with the protection of natural persons with regard to the processing of personal data.\n\
 #### Example 1 Questions\n\
-What are the objectives of GDPR?|What is covered in GDPR?|Who does GDPR protect?|Does GDPR prevent personal data from being moved or processed elsewhere in the European Union?\n\
+What are the objectives of General Data Protection Regulation (GDPR)?|What is covered in General Data Protection Regulation (GDPR)?|Who does General Data Protection Regulation (GDPR) protect?|Does General Data Protection Regulation (GDPR) prevent personal data from being moved or processed elsewhere in the European Union?\n\
 #### Example 2 Input\n\
 Article 70 Tasks of the Board\n\
     1. The Board shall ensure the consistent application of this Regulation. To that end, the Board shall, on its own initiative or, where relevant, at the request of the Commission, in particular:\n\

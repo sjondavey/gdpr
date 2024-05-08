@@ -18,15 +18,15 @@ def check_definitions(path_to_definitions_as_parquet_file):
 
 def check_index(path_to_index_as_parquet_file):
     df_text_all = pd.read_parquet(path_to_index_as_parquet_file, engine='pyarrow')
-    assert len(df_text_all.columns) == 4
-    expected_columns = ["section_reference", "text", "source", "embedding"]
+    expected_columns = ["section_reference", "text", "source", "embedding", "document"]
+    assert len(df_text_all.columns) == len(expected_columns)
     for column_heading in df_text_all.columns:
         assert column_heading in expected_columns
 
 
 def test_data():
     # Make sure that when you load the manual, there are no NaN values
-    manual = load_csv_data("./inputs/gdpr.csv")
+    manual = load_csv_data("./inputs/documents/gdpr.csv")
     assert not manual.isna().any().any()
 
     path_to_definitions_as_parquet_file = "./inputs/definitions_gdpr.parquet"
@@ -41,7 +41,7 @@ def test_data():
 
 
 def test_load_csv_data():
-    df_document = load_csv_data("./inputs/gdpr.csv")
+    df_document = load_csv_data("./inputs/documents/gdpr.csv")
     assert not df_document.isna().any().any()
 
 # def test_append_csv_data():

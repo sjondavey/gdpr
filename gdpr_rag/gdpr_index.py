@@ -11,7 +11,7 @@ class GDPRIndex(StandardRegulationIndex):
         regulation_name = "General Data Protection Regulation (GDPR)"
 
 
-        path_to_manual_as_csv_file = "./inputs/gdpr.csv"
+        path_to_manual_as_csv_file = "./inputs/documents/gdpr.csv"
         path_to_additional_manual_as_csv_file = ""
         df_regulations = load_regulation_data_from_files(path_to_manual_as_csv_file, 
                                                          path_to_additional_manual_as_csv_file)
