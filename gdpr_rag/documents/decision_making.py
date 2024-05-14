@@ -21,29 +21,29 @@ def extract_footnotes(text):
     return footnotes, text
 
 
-class Article_47_BCR(Document):
-    def __init__(self, path_to_manual_as_csv_file = "./inputs/documents/article_47_bcr.csv"):
+class DecisionMaking(Document):
+    def __init__(self, path_to_manual_as_csv_file = "./inputs/documents/decision_making.parquet"):
 
-        main = MainSection()
-        alt = AltSection()
-        analysis = AnalysisSection()
-        reference_checker = MultiReferenceChecker([main, alt, analysis])
+        main =  DecisionMakingReferenceChecker()
+        annex = AnnexSectionReferenceChecker()
+        reference_checker = MultiReferenceChecker([main, annex])
 
-        self.document_as_df = load_csv_data(path_to_file = path_to_manual_as_csv_file)
+        #self.document_as_df = load_csv_data(path_to_file = path_to_manual_as_csv_file)
+        self.document_as_df = pd.read_parquet(path_to_manual_as_csv_file, engine = 'pyarrow')
 
-        document_name = "Recommendations 1/2022 on the Application for Approval and on the elements and principles to be found in Controller Binding Corporate Rules"
+        document_name = "Guidelines on Automated individual decision-making and Profiling for the purposes of Regulation 2016/679"
         super().__init__(document_name, reference_checker=reference_checker)
         if not self.check_columns():
-            raise AttributeError(f"The input csv file for the Article_47_BCR class does not have the correct column headings")
+            raise AttributeError(f"The input csv file for the DecisionMaking class does not have the correct column headings")
 
 
     def check_columns(self):
-        expected_columns = ["section", "point", "section_reference", "heading", "text"] 
+        expected_columns = ["section", "subsection", "point", "heading", "text", "section_reference"]
 
         actual_columns = self.document_as_df.columns.to_list()
         for column in expected_columns:
             if column not in actual_columns:
-                print(f"{column} not in the DataFrame version of the manual")
+                print(f"{column} not in the DataFrame version of the DecisionMaking csv file")
                 return False
         return True
 
@@ -51,17 +51,21 @@ class Article_47_BCR(Document):
         if row["heading"]:
             if row["point"] != "":
                 return row["point"] + ". " + text_extract
+            elif row["subsection"] != "":
+                return row["subsection"] + ". " + text_extract
             else:
-                return row["section"] + " " + text_extract
+                return row["section"] + ". " + text_extract
         else:    
             if heading:
                 return ""
             if row["point"]:
-                return row["point"] + ". " + text_extract
+                return " " * 8 + text_extract
+            elif row["subsection"]:
+                return " " * 4 +  text_extract
             else:
-                return "    " + text_extract
+                return text_extract
 
-    def get_text(self, section_reference):       
+    def get_text(self, section_reference):               
         if not (section_reference == "" or self.reference_checker.is_valid(section_reference)):
             return "" 
         else:
@@ -72,9 +76,12 @@ class Article_47_BCR(Document):
             if section_reference == "":
                 subset = self.document_as_df
             else:
-
-                pattern = r'^\d\.\d' # there is a special case here were if I ask for "1.1" for example, the "startswith()" query will also include 1.10, 1.11 etc
-                if re.match(pattern, section_reference):
+                # NOTE: the exception for section IV which is long and actually should have been indexed with an intro
+                section_IV_pattern = r'^\b(IV)\b$' 
+                pattern = r'^(I|II|III|IV|V|VI)$'
+                if re.match(section_IV_pattern, section_reference):
+                    subset = self.document_as_df[self.document_as_df["section_reference"] == section_reference] 
+                elif re.match(pattern, section_reference):
                     tmp1 = self.document_as_df[self.document_as_df["section_reference"].str.startswith(section_reference + ".")] # use startswith to get children as well
                     tmp2 = self.document_as_df[self.document_as_df["section_reference"] == section_reference] 
                     subset = pd.concat([tmp1, tmp2]).sort_index()
@@ -91,11 +98,19 @@ class Article_47_BCR(Document):
             parent = self.reference_checker.get_parent_reference(section_reference)
             build_up = ""
             while parent != "":
-                subset = self.document_as_df[self.document_as_df["section_reference"] == parent]
-                for index, row in subset[::-1].iterrows(): # backwards
-                    footnotes, text_extract = extract_footnotes(row["text"])
-                    all_footnotes = all_footnotes + footnotes
-                    build_up = self._add_numbering_to_text(row, text_extract) + "\n" + build_up
+                if parent == "IV": # loads of text that would need to be repeated for each sub-point
+                    subset = self.document_as_df[self.document_as_df["section_reference"] == parent]
+                    for index, row in subset[::-1].iterrows(): # backwards
+                        if row["heading"]:
+                            footnotes, text_extract = extract_footnotes(row["text"])
+                            all_footnotes = all_footnotes + footnotes
+                            build_up = self._add_numbering_to_text(row, text_extract) + "\n" + build_up
+                else:
+                    subset = self.document_as_df[self.document_as_df["section_reference"] == parent]
+                    for index, row in subset[::-1].iterrows(): # backwards
+                        footnotes, text_extract = extract_footnotes(row["text"])
+                        all_footnotes = all_footnotes + footnotes
+                        build_up = self._add_numbering_to_text(row, text_extract) + "\n" + build_up
 
                 parent = self.reference_checker.get_parent_reference(parent)
             if build_up != "":
@@ -148,39 +163,24 @@ class Article_47_BCR(Document):
             return text.strip()
 
 
-class MainSection(ReferenceChecker):
+class DecisionMakingReferenceChecker(ReferenceChecker):
     def __init__(self):
         exclusion_list = [] 
         index_patterns = [
-            r'^\d+',   
-            r'^\.\d+', 
-            r'^\.\d+', 
+            r'^\b(I|II|III|IV|V|VI)\b',   
+            r'^\.([A-Z])', 
             r'^\.\d+', 
         ]    
-        text_pattern = r'(\d+(\.\d+)?(\.\d+)?(\.\d+)?)'
+        text_pattern = r'(I|II|III|IV|V|VI)(\.([A-Z]))?(\.\d+)?'
 
         super().__init__(regex_list_of_indices = index_patterns, text_version = text_pattern, exclusion_list=exclusion_list)
 
-class AltSection(ReferenceChecker):
+class AnnexSectionReferenceChecker(ReferenceChecker):
     def __init__(self):
         exclusion_list = [] #
         index_patterns = [
-            r'\bApplication\b',
-            r'\.\s(Part|Annex)\s\d+', # "". Part" or ".Annex"
-            r'\.\d+',
+            r'^Annex (\d+)'
         ]
-        text_pattern = r'Application. (Part/Annex\s\d+)?(\.(\d+))?'
+        text_pattern = r'Annex \d+'
 
         super().__init__(regex_list_of_indices = index_patterns, text_version = text_pattern, exclusion_list=exclusion_list)
-
-class AnalysisSection(ReferenceChecker):
-    def __init__(self):
-        exclusion_list = [] #
-        index_patterns = [
-            r'\bAnalysis\b',
-            r'\s\d+', 
-        ]
-        text_pattern = r'Analysis (\d+)?'
-
-        super().__init__(regex_list_of_indices = index_patterns, text_version = text_pattern, exclusion_list=exclusion_list)
-
