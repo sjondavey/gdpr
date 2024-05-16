@@ -166,9 +166,9 @@ class CorpusChat():
             answer = response[len(prefix):].strip()
 
             # Extract and clean references from the raw response
-            references = answer.split("Reference:")[1].split(",") if "Reference:" in answer else []
+            references = answer.split("Reference:")[-1].split(",") if "Reference:" in answer else []
             cleaned_references = [ref.strip() for ref in references if ref.strip()]
-            llm_text = answer[:answer.find("Reference:")].strip() if "Reference:" in answer else answer
+            llm_text = answer[:answer.rfind("Reference:")].strip() if "Reference:" in answer else answer
 
             # Did not supply any references which is in line with the Instruction
             if not cleaned_references:                

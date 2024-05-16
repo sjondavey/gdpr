@@ -13,9 +13,13 @@ def output_doc_as_text(pdf_doc, start_page = 0, end_page = 0, header_size=80, fo
         tl = page.rect[0], page.rect[1]  # lower-left coordinates
         br = page.rect[2], page.rect[3]  # upper-right
         rect = fitz.Rect(tl[0], tl[1]+header_size, br[0], br[1]-footer_size)
-        raw_text = page.get_text('text', clip=rect)
+        
+        # raw_text = page.get_text('text', clip=rect)
+        # cleaned_text = clean_text(raw_text, lines_to_delete=lines_to_delete, characters_to_replace=characters_to_replace)
+        
+        raw_text = page.get_text('blocks', clip=rect)
+        cleaned_text = clean_blocks(raw_text, lines_to_delete=lines_to_delete, characters_to_replace=characters_to_replace)
 
-        cleaned_text = clean_text(raw_text, lines_to_delete=lines_to_delete, characters_to_replace=characters_to_replace)
         combined_text += cleaned_text
     return combined_text
 
@@ -25,7 +29,8 @@ def clean_text(text, lines_to_delete, characters_to_replace):
         lines_to_replace: a list of lines to delete. Some documents have page or section ends like "---oOo---"
         characters_to_replace: a list of lists. The first item in the list is the text to replace, the second is the replacement text
     '''
-    lines = text.split("\n")
+    lines = text.split("\n") 
+
     cleaned_lines = []
     for line in lines:
         if line.strip():  # If the line contains text other than whitespace
@@ -43,3 +48,21 @@ def clean_text(text, lines_to_delete, characters_to_replace):
 
     #return " ".join(cleaned_lines)
     
+
+def clean_blocks(blocks, lines_to_delete, characters_to_replace):
+    page_text = ""
+    blocks.sort(key=lambda block: (block[1], block[0]))  # Sort blocks by y0, x0 (top to bottom, left to right)
+    current_position = None
+    text = ""
+    for block in blocks:
+        if current_position is None or block[1] > current_position + 5:
+            if text:
+                page_text = page_text + text.strip() + "\n"
+            text = block[4]
+        else:
+            text += " " + block[4]
+        current_position = block[3]  # Update current y1 position
+    if text:
+        page_text = page_text + text.strip()  # Write last paragraph if exists
+
+    return page_text
