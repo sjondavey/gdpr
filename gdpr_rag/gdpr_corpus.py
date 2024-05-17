@@ -4,6 +4,7 @@ from gdpr_rag.documents.article_47_bcr import Article_47_BCR
 from gdpr_rag.documents.decision_making import DecisionMaking
 from gdpr_rag.documents.dpia import DPIA
 from gdpr_rag.documents.dpo import DPO
+from gdpr_rag.documents.article_49_intl_transfer import Article_49_Intl_Transfer
 
 
 from regulations_rag.corpus import Corpus , create_document_dictionary_from_folder
