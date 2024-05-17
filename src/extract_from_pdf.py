@@ -51,18 +51,15 @@ def clean_text(text, lines_to_delete, characters_to_replace):
 
 def clean_blocks(blocks, lines_to_delete, characters_to_replace):
     page_text = ""
-    blocks.sort(key=lambda block: (block[1], block[0]))  # Sort blocks by y0, x0 (top to bottom, left to right)
-    current_position = None
-    text = ""
     for block in blocks:
-        if current_position is None or block[1] > current_position + 5:
-            if text:
-                page_text = page_text + text.strip() + "\n"
-            text = block[4]
-        else:
-            text += " " + block[4]
-        current_position = block[3]  # Update current y1 position
-    if text:
-        page_text = page_text + text.strip()  # Write last paragraph if exists
+            if block[6] == 0:  # block type: text
+                block_text = block[4]
+                block_text = block_text.replace("\n", "")  # Replace newlines within paragraphs
 
+                page_text += block_text + "\n"  # Add newline to separate paragraphs
+
+    for replacement in characters_to_replace:
+        page_text = page_text.replace(replacement[0], replacement[1])
+    for replacement in lines_to_delete:
+        page_text = page_text.replace(replacement, "")
     return page_text
