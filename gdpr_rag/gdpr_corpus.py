@@ -6,6 +6,7 @@ from gdpr_rag.documents.dpia import DPIA
 from gdpr_rag.documents.dpo import DPO
 from gdpr_rag.documents.article_49_intl_transfer import Article_49_Intl_Transfer
 from gdpr_rag.documents.lead_sa import Lead_SA
+from gdpr_rag.documents.data_breach import DataBreach
 
 
 from regulations_rag.corpus import Corpus , create_document_dictionary_from_folder
