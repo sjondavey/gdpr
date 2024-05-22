@@ -54,7 +54,7 @@ def clean_blocks(blocks, lines_to_delete, characters_to_replace):
     for block in blocks:
             if block[6] == 0:  # block type: text
                 block_text = block[4]
-                block_text = block_text.replace("\n", "")  # Replace newlines within paragraphs
+                block_text = block_text.replace("\n", " ")  # Replace newlines within paragraphs
 
                 page_text += block_text + "\n"  # Add newline to separate paragraphs
 

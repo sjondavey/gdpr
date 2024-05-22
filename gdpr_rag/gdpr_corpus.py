@@ -10,6 +10,8 @@ from gdpr_rag.documents.data_breach import DataBreach
 from gdpr_rag.documents.data_portability import DataPortability
 from gdpr_rag.documents.transparency import Transparency
 from gdpr_rag.documents.codes import Codes
+from gdpr_rag.documents.online_services import OnlineServices
+
 
 
 from regulations_rag.corpus import Corpus , create_document_dictionary_from_folder
