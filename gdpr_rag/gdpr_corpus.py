@@ -11,6 +11,7 @@ from gdpr_rag.documents.data_portability import DataPortability
 from gdpr_rag.documents.transparency import Transparency
 from gdpr_rag.documents.codes import Codes
 from gdpr_rag.documents.online_services import OnlineServices
+from gdpr_rag.documents.territorial_scope import TerritorialScope
 
 
 
