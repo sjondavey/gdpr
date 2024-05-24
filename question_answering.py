@@ -17,7 +17,11 @@ logger.setLevel(ANALYSIS_LEVEL)
 
 from regulations_rag.rerank import RerankAlgos
 
-from gdpr_rag.gdpr_chat import GDPRChat
+from regulations_rag.regulation_chat import ChatParameters
+from regulations_rag.regulation_index import  EmbeddingParameters
+
+from gdpr_rag.corpus_index import GDPRCorpusIndex
+from gdpr_rag.corpus_chat import CorpusChat
 
 
 if 'user_id' not in st.session_state:
@@ -76,15 +80,35 @@ st.title('GDPR: Question Answering')
 if 'openai_api' not in st.session_state:
     st.session_state['openai_client'] = OpenAI(api_key = st.secrets['openai']['OPENAI_API_KEY'])
 
+if 'selected_model' not in st.session_state.keys():
+    #st.session_state['model_options'] = ['gpt-4-0125-preview', 'gpt-4', 'gpt-3.5-turbo']
+    st.session_state['model_options'] = ['gpt-4o']
+    st.session_state['selected_model'] = 'gpt-4o'
+    st.session_state['selected_model_previous'] = 'gpt-4o'
+
 def load_data():
     logger.debug(f'--> cache_resource called again to reload data')
     with st.spinner(text="Loading the gdpr documents and index - hang tight! This should take 5 seconds."):
 
+        corpus_index = GDPRCorpusIndex()
+
         rerank_algo = RerankAlgos.LLM
-        chat = GDPRChat(openai_client = st.session_state['openai_client'],
-                        decryption_key = st.secrets['index']['decryption_key'],
-                        rerank_algo = rerank_algo,
-                        user_name_for_logging=st.session_state["user_id"])
+        rerank_algo.params["openai_client"] = st.session_state['openai_client']
+        rerank_algo.params["model_to_use"] = st.session_state['selected_model']
+        rerank_algo.params["user_type"] = corpus_index.user_type
+        rerank_algo.params["corpus_description"] = corpus_index.corpus_description
+        rerank_algo.params["final_token_cap"] = 5000 # can go large with the new models
+
+        embedding_parameters = EmbeddingParameters("text-embedding-3-large", 1024)
+        chat_parameters = ChatParameters(chat_model = "gpt-4o", temperature = 0, max_tokens = 500)
+        
+        chat = CorpusChat(openai_client = st.session_state['openai_client'],
+                          embedding_parameters = embedding_parameters, 
+                          chat_parameters = chat_parameters, 
+                          corpus_index = corpus_index,
+                          rerank_algo = rerank_algo,   
+                          user_name_for_logging=st.session_state["user_id"])
+
 
 
         return chat
@@ -92,17 +116,14 @@ def load_data():
 if 'chat' not in st.session_state:
     logger.debug('Adding \'Excon\' to keys')
     st.session_state['chat'] = load_data()
-
-
-if 'selected_model' not in st.session_state.keys():
-    st.session_state['model_options'] = ['gpt-4-0125-preview', 'gpt-4', 'gpt-3.5-turbo']
-    st.session_state['selected_model'] = 'gpt-4-0125-preview'
-    st.session_state['selected_model_previous'] = 'gpt-4-0125-preview'
     st.session_state['chat'].chat_parameters.model = st.session_state['selected_model']
 
 
 
-st.write(f"I am a bot designed to answer questions based on the {st.session_state['chat'].index.regulation_name}. How can I assist today?")
+
+
+
+st.write(f"I am a bot designed to answer questions based on {st.session_state['chat'].index.corpus_description}. How can I assist today?")
 # Credentials
 with st.sidebar:
 
@@ -155,7 +176,10 @@ if prompt := st.chat_input():
 
             with st.spinner("Thinking..."):
                 logger.debug(f"Making call to GDPR with prompt: {prompt}")
-                response = st.session_state['chat'].chat_completion(user_content = prompt)
+                
+                st.session_state['chat'].user_provides_input(prompt)
+
+                response = st.session_state['chat'].messages[-1]["content"]
                 logger.debug(f"Response received")
                 logger.debug(f"Text Returned from GDPR chat: {response}")
                 placeholder.markdown(response)
