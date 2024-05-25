@@ -707,18 +707,18 @@ class CorpusChat():
                 document_name = self.corpus.get_document(df_definitions.iloc[row_number]["document"]).name
                 section_reference = df_definitions.iloc[row_number]["section_reference"]
                 if section_reference == "":
-                    reference_string += f"The definitions in {document_name}\n"
+                    reference_string += f"The definitions in {document_name}  \n"
                 else:
-                    reference_string += f"Definition {section_reference} from {document_name}\n"
+                    reference_string += f"Definition {section_reference} from {document_name}  \n"
                 used_definitions.append(row_number)
             else:
                 row_number = reference - number_of_definitions - 1
                 document_name = self.corpus.get_document(df_search_sections.iloc[row_number]["document"]).name
                 section_reference = df_search_sections.iloc[row_number]["section_reference"]
                 if section_reference == "":
-                    reference_string += f"The document {document_name}\n"
+                    reference_string += f"The document {document_name}  \n"
                 else:
-                    reference_string += f"Section {section_reference} from {document_name}\n"
+                    reference_string += f"Section {section_reference} from {document_name}  \n"
                 used_sections.append(row_number)
 
         # Now update df_definitions, df_search_sections so that they only contained the sections referenced by the answer
@@ -726,7 +726,7 @@ class CorpusChat():
         df_search_sections = df_search_sections.iloc[used_sections]
 
         # Reconstruct the answer with reformatted references
-        formatted_references = f"\nReference:\n{reference_string}"
+        formatted_references = f"  \nReference:  \n{reference_string}"
         return result['answer'] + formatted_references, df_definitions, df_search_sections
 
 
