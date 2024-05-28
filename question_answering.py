@@ -155,6 +155,7 @@ if "messages" not in st.session_state.keys():
     st.session_state['messages'] = [] 
 
 # Display or clear chat messages
+# https://discuss.streamlit.io/t/chat-message-assistant-component-getting-pushed-into-user-message/57231
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.write(message["content"])
