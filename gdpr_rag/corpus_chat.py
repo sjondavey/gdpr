@@ -89,6 +89,7 @@ class CorpusChat():
     def reset_conversation_history(self):
         self.messages = []
         self.messages_without_rag = []
+        self.references = {}
         self.system_state = CorpusChat.State.RAG
 
 
@@ -114,6 +115,9 @@ class CorpusChat():
         self.messages.append({"role": role, "content": content})
         # logger.log(ANALYSIS_LEVEL, f"{role} to {self.user_name}: {content}")        
         self.messages_without_rag.append({"role": role, "content": content_without_rag})        
+
+    def append_references(self, reformatted_response, df_references):
+        self.references[reformatted_response.strip()] = df_references
 
     def _create_system_message(self, number_of_options = 3, review = False):
         """
@@ -246,7 +250,7 @@ class CorpusChat():
         elif response.startswith(CorpusChat.Prefix.NONE.value):
             return {"success": True, "path": CorpusChat.Prefix.NONE.value}
 
-        llm_instruction = f"Your response, did not begin with one of the keywords, '{CorpusChat.Prefix.ANSWER.value}', '{CorpusChat.Prefix.SECTION.value}' or '{CorpusChat.Prefix.NONE.value}'. Please re-write your answer in the required format."
+        llm_instruction = f"Your response, did not begin with one of the keywords, '{CorpusChat.Prefix.ANSWER.value}', '{CorpusChat.Prefix.SECTION.value}' or '{CorpusChat.Prefix.NONE.value}'. Please review the question and provide an answer in the required format."
         return {"success": False, "path": "NONE", "llm_followup_instruction": llm_instruction}
         
 
@@ -557,7 +561,10 @@ class CorpusChat():
                     #   result = {"success": True, "path": "ANSWER:"", "answer": llm_text, "reference": references_as_integers}
                     self.append_content("user", self._add_rag_data_to_question(user_content, df_definitions, df_search_sections))
                     reformatted_response, df_definitions, df_search_sections = self.reformat_assistant_answer(result, df_definitions = df_definitions, df_search_sections = df_search_sections)
+                    # collect references
+                    df_references = self.collect_references(df_definitions, df_search_sections)
                     self.append_content("assistant", reformatted_response)
+                    self.append_references(reformatted_response, df_references)
                     self.system_state = CorpusChat.State.RAG 
                     return 
                 elif result["path"] == CorpusChat.Prefix.SECTION.value:
@@ -590,7 +597,10 @@ class CorpusChat():
                         logger.info("Note: Question answered with the additional information")
                         self.append_content("user", self._add_rag_data_to_question(user_content, df_definitions, df_search_sections))
                         reformatted_response, df_definitions, df_search_sections = self.reformat_assistant_answer(result, df_definitions = df_definitions, df_search_sections = df_search_sections)
+                        # collect references
+                        df_references = self.collect_references(df_definitions, df_search_sections)                        
                         self.append_content("assistant", reformatted_response)
+                        self.append_references(reformatted_response, df_references)
                         self.system_state = CorpusChat.State.RAG 
                         return
                     
@@ -620,6 +630,15 @@ class CorpusChat():
             self.append_content("assistant", CorpusChat.Errors.UNKNOWN_STATE.value)
             return
 
+    def collect_references(self, df_definitions, df_search_sections):
+        references = []
+        for index, row in df_definitions.iterrows():
+            references.append([row['document'], row['section_reference'], row['definition']])
+        for index, row in df_search_sections.iterrows():
+            references.append([row['document'], row['section_reference'], row['regulation_text']])
+
+        df_references = pd.DataFrame(references, columns = ["document", "section_reference", "text"])
+        return df_references
 
     def add_section_to_resource(self, result, df_definitions, df_search_sections):
         '''

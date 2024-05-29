@@ -15,7 +15,7 @@ from gdpr_rag.documents.territorial_scope import TerritorialScope
 from gdpr_rag.documents.video import Video
 from gdpr_rag.documents.covid_health import CovidHealth
 from gdpr_rag.documents.covid_location import CovidLocation
-from gdpr_rag.documents.concent import Concent
+from gdpr_rag.documents.consent import Consent
 
 
 

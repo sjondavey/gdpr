@@ -1,7 +1,7 @@
 import streamlit as st
 from gdpr_rag.corpus_chat import CorpusChat
 
-st.title('GDPR: Section Lookup')
+st.title('GDPR: Section Lookup', layout="wide")
 
 
 with st.sidebar:

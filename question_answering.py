@@ -3,6 +3,7 @@ import logging
 import streamlit as st
 import openai
 import os
+import re
 import bcrypt
 from openai import OpenAI
 
@@ -75,7 +76,7 @@ if "password_correct" not in st.session_state.keys():
 
 
 # App title - Must be first Streamlit command
-st.set_page_config(page_title="💬 GDPR Question Answering")
+st.set_page_config(page_title="💬 GDPR Question Answering", layout="wide")
 
 st.title('GDPR: Question Answering')
 
@@ -139,7 +140,7 @@ with st.sidebar:
 
 
     temperature = 0.0
-    max_length = 500 # Note. If you increase this, you need to amend the two instances of the following lines of code in chat_bot.py
+    max_length = 1000 # Note. If you increase this, you need to amend the two instances of the following lines of code in chat_bot.py
         #   if (model_to_use == "gpt-3.5-turbo" or model_to_use == "gpt-4") and total_tokens > 3500 and model_to_use!="gpt-3.5-turbo-16k":
         #                     logger.warning("!!! NOTE !!! You have a very long prompt. Switching to the gpt-3.5-turbo-16k model")
         #                     model_to_use = "gpt-3.5-turbo-16k"    
@@ -158,7 +159,33 @@ if "messages" not in st.session_state.keys():
 # https://discuss.streamlit.io/t/chat-message-assistant-component-getting-pushed-into-user-message/57231
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
-        st.write(message["content"])
+        if message["role"] == "assistant":
+            ############################################################################
+            response = message["content"]
+            all_references = st.session_state['chat'].references[response.strip()]
+
+            # Split the answer into two parts: before "Reference:" and the references part
+            parts = re.split(r'Reference:\s*', response, maxsplit=1)
+
+            # Extract the text before "Reference:"
+            answer_without_references = parts[0].strip()
+            st.write(answer_without_references)
+
+            # Extract the references part and split into lines
+            if len(parts) > 1:
+                references = parts[1].strip().split('\n')
+            else:
+                references = []
+            counter = 0
+            for reference in references:
+                with st.expander(reference.strip()):
+                    st.markdown(all_references.iloc[counter]['text'])
+                counter = counter + 1
+            ############################################################################
+
+
+        else:
+            st.write(message["content"])
 
 def clear_chat_history():
     logger.debug("Clearing \'messages\'")
@@ -175,17 +202,39 @@ if prompt := st.chat_input():
         with st.chat_message("user"):
             st.markdown(prompt)
         with st.chat_message("assistant"):
-            placeholder = st.empty()
+            #placeholder = st.empty()
 
             with st.spinner("Thinking..."):
                 logger.debug(f"Making call to GDPR with prompt: {prompt}")
                 
                 st.session_state['chat'].user_provides_input(prompt)
 
+                ############################################################################
                 response = st.session_state['chat'].messages[-1]["content"]
+                all_references = st.session_state['chat'].references[response.strip()]
+
+                # Split the answer into two parts: before "Reference:" and the references part
+                parts = re.split(r'Reference:\s*', response, maxsplit=1)
+
+                # Extract the text before "Reference:"
+                answer_without_references = parts[0].strip()
+                st.markdown(answer_without_references)
+
+                # Extract the references part and split into lines
+                if len(parts) > 1:
+                    references = parts[1].strip().split('\n')
+                else:
+                    references = []
+                counter = 0
+                for reference in references:
+                    with st.expander(reference.strip()):
+                        st.markdown(all_references.iloc[counter]['text'])
+                    counter = counter + 1
+                ############################################################################
+
+
                 logger.debug(f"Response received")
                 logger.debug(f"Text Returned from GDPR chat: {response}")
-                placeholder.markdown(response)
             st.session_state['messages'].append({"role": "assistant", "content": response})
             logger.debug("Response added the the queue")
     
