@@ -36,8 +36,8 @@ class Consent(Document):
         return super().get_text_for_section_only(section_reference, add_markdown_decorators, footnote_pattern)
 
 
-    def get_heading(self, section_reference, footnote_pattern = r'^\[\^\d+\]\:'):
-        return super().get_heading(section_reference, footnote_pattern)
+    def get_heading(self, section_reference, add_markdown_decorators = False, footnote_pattern = r'^\[\^\d+\]\:'):
+        return super().get_heading(section_reference, add_markdown_decorators, footnote_pattern)
 
     class ConsentReferenceChecker(ReferenceChecker):
         def __init__(self):
