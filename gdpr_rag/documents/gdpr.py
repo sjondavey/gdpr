@@ -28,7 +28,7 @@ class GDPR(Document):
         return True
 
 
-    def get_text(self, section_reference):
+    def get_text(self, section_reference, add_markdown_decorators = True, footnote_pattern = ''):
         if not self.reference_checker.is_valid(section_reference):
             return ""
 
@@ -51,16 +51,26 @@ class GDPR(Document):
             if len(subframe) == 0:
                 return ""
 
+        space = " "
+        line_end = "\n"
+        heading = ''
         formatted_regulation = ""
-        formatted_regulation = formatted_regulation + f"{subframe.iloc[0]['article_number']} {subframe.iloc[0]['article_heading']}\n"  
+        if add_markdown_decorators:
+            space = '&nbsp;'
+            line_end = "\n\n"
+            formatted_regulation = "# "
+
+        formatted_regulation = formatted_regulation + f"{subframe.iloc[0]['article_number']} {subframe.iloc[0]['article_heading']}{line_end}"  
         for index, row in subframe.iterrows():
-            line = row["content"] + "\n"
+
+            line = row["content"] + line_end
             if row["minor_reference"]:
-                line = 2 * 4 * " " + f"({row['minor_reference']}) " + line
+                line = 2 * 4 * space + heading + f"({row['minor_reference']}) " + line
             elif row["major_reference"]:
-                line = 1 * 4 * " " + f"{row['major_reference']}. " + line
+                line = 1 * 4 * space + heading + f"{row['major_reference']}. " + line
             else:
                 line = line
+
 
             formatted_regulation = formatted_regulation + line
 
