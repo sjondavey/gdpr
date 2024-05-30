@@ -32,13 +32,6 @@ class CovidLocation(Document):
                 return False
         return True
 
-    def _add_numbering_to_text(self, row, text_extract, heading = False):
-        if row["heading"]:
-            return row["section_reference"] + " " + text_extract
-        else:    
-            if heading:
-                return ""
-            return text_extract
 
     def get_text(self, section_reference, add_markdown_decorators = True, footnote_pattern = r'^\[\^\d+\]\:'):               
         return super().get_text_for_section_only(section_reference, add_markdown_decorators, footnote_pattern)
