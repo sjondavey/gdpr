@@ -16,6 +16,7 @@ from gdpr_rag.documents.video import Video
 from gdpr_rag.documents.covid_health import CovidHealth
 from gdpr_rag.documents.covid_location import CovidLocation
 from gdpr_rag.documents.consent import Consent
+from gdpr_rag.documents.forgotten import Forgotten
 
 
 
