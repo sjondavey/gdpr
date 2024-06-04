@@ -4,6 +4,7 @@ from regulations_rag.regulation_reader import  load_csv_data
 from regulations_rag.document import Document
 from regulations_rag.reference_checker import ReferenceChecker
 from regulations_rag.reference_checker import MultiReferenceChecker
+from regulations_rag.regulation_table_of_content import StandardTableOfContent
 
 
 
@@ -40,6 +41,9 @@ class Codes(Document):
 
     def get_heading(self, section_reference, add_markdown_decorators = False, footnote_pattern = r'^\[\^\d+\]\:'):
         return super().get_heading(section_reference, add_markdown_decorators, footnote_pattern)
+
+    def get_toc(self):
+        return StandardTableOfContent(root_node_name = self.name, index_checker = self.reference_checker, regulation_df = self.document_as_df)
 
 
     class CodesReferenceChecker(ReferenceChecker):

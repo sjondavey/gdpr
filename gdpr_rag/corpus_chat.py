@@ -250,7 +250,7 @@ class CorpusChat():
         elif response.startswith(CorpusChat.Prefix.NONE.value):
             return {"success": True, "path": CorpusChat.Prefix.NONE.value}
 
-        llm_instruction = f"Your response, did not begin with one of the keywords, '{CorpusChat.Prefix.ANSWER.value}', '{CorpusChat.Prefix.SECTION.value}' or '{CorpusChat.Prefix.NONE.value}'. Please review the question and provide an answer in the required format."
+        llm_instruction = f"Your response, did not begin with one of the keywords, '{CorpusChat.Prefix.ANSWER.value}', '{CorpusChat.Prefix.SECTION.value}' or '{CorpusChat.Prefix.NONE.value}'. Please review the question and provide an answer in the required format. Also make sure the referenced extracts are quoted at the end of the answer, not in the body, by number, in a comma separated list starting after the keyword 'Reference: '. Do not include the word Extract, only provide the number(s).\n"
         return {"success": False, "path": "NONE", "llm_followup_instruction": llm_instruction}
         
 

@@ -23,12 +23,12 @@ class TestGDPRCorpusIndex():
         assert section == "4(7)"
         doc = relevant_definitions.iloc[0]["document"]
         assert doc == "GDPR"
-        definition = self.index.corpus.get_text(doc, section)
+        definition = self.index.corpus.get_text(doc, section, add_markdown_decorators = False)
         expected_definition = "4 Definitions\n    7. 'controller' means the natural or legal person, public authority, agency or other body which, alone or jointly with others, determines the purposes and means of the processing of personal data; where the purposes and means of such processing are determined by Union or Member State law, the controller or the specific criteria for its nomination may be provided for by Union or Member State law;\n"
         assert definition == expected_definition 
 
     def test_get_relevant_sections(self):
-        user_content = "Are there exemptions from GDPR?"
+        user_content = "Are there exemptions from GDPR for small companies?"
         user_content_embedding = get_ada_embedding(self.openai_client, user_content, self.embedding_parameters.model, self.embedding_parameters.dimensions)     
         rerank_algo = RerankAlgos.NONE  
         relevant_definitions = self.index.get_relevant_sections(user_content = user_content, user_content_embedding = user_content_embedding, threshold = self.embedding_parameters.threshold, rerank_algo=rerank_algo) 

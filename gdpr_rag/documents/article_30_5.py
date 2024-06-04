@@ -1,6 +1,7 @@
 import pandas as pd
 from regulations_rag.regulation_reader import  load_csv_data
 from regulations_rag.document import Document
+from regulations_rag.regulation_table_of_content import StandardTableOfContent
 
 
 from regulations_rag.reference_checker import EmptyReferenceChecker
@@ -27,14 +28,18 @@ class Article_30_5(Document):
                 return False
         return True
 
-    def get_text(self, section_reference):
+    def get_text(self, section_reference, add_markdown_decorators = True, footnote_pattern = ""):
         if section_reference == "" or section_reference == "all":
             return self.document_as_df.iloc[0]['text']
         else:
             return ""
 
-    def get_heading(self, section_reference):
+    def get_heading(self, section_reference, add_markdown_decorators = True, footnote_pattern = ""):
         if section_reference == "" or section_reference == "all":
             return "Entire document"
         else:
             return ""
+
+    def get_toc(self):
+        return StandardTableOfContent(root_node_name = self.name, index_checker = self.reference_checker, regulation_df = self.document_as_df)
+
