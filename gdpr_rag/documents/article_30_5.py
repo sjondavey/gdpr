@@ -28,13 +28,13 @@ class Article_30_5(Document):
                 return False
         return True
 
-    def get_text(self, section_reference, add_markdown_decorators = True, footnote_pattern = ""):
+    def get_text(self, section_reference, add_markdown_decorators = True, add_headings = True, section_only = True):
         if section_reference == "" or section_reference == "all":
             return self.document_as_df.iloc[0]['text']
         else:
             return ""
 
-    def get_heading(self, section_reference, add_markdown_decorators = True, footnote_pattern = ""):
+    def get_heading(self, section_reference, add_markdown_decorators = False):
         if section_reference == "" or section_reference == "all":
             return "Entire document"
         else:

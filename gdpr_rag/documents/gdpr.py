@@ -3,6 +3,7 @@ import re
 from regulations_rag.document import Document
 from regulations_rag.regulation_reader import  load_csv_data
 from regulations_rag.reference_checker import ReferenceChecker
+from regulations_rag.regulation_table_of_content import StandardTableOfContent
 
 
 
@@ -10,12 +11,16 @@ class GDPR(Document):
     def __init__(self, path_to_manual_as_csv_file = "./inputs/documents/gdpr.csv"):
         reference_checker = self.GDPRReferenceChecker()
 
+
         self.document_as_df = load_csv_data(path_to_file = path_to_manual_as_csv_file)
 
         document_name = "General Data Protection Regulation"
         super().__init__(document_name, reference_checker=reference_checker)
         if not self.check_columns():
             raise AttributeError(f"The input csv file for the GDPR class does not have the correct column headings")
+
+        self.toc_reference_checker = self.GDPRToCReferenceChecker()
+        self.toc = self.get_toc()
 
 
     def check_columns(self):
@@ -29,7 +34,23 @@ class GDPR(Document):
         return True
 
 
-    def get_text(self, section_reference, add_markdown_decorators = True, footnote_pattern = ''):
+    def get_text(self, section_reference, add_markdown_decorators = True, add_headings = True, section_only = True):
+        
+        ## NOTE add_markdown_decorators = True, add_headings = True, section_only = False not implemented 
+
+        footnote_pattern = ''
+        if self.toc_reference_checker.is_valid(section_reference):
+            node = self.toc.get_node(section_reference)
+            if not node.children:
+                gdpr_reference = node.full_node_name.split('.', 1)[1]
+                return self.get_text(gdpr_reference, add_markdown_decorators, footnote_pattern)
+            else:
+                all_article_text = ""
+                for child in node.children:
+                    child_node_gdpr_reference = child.full_node_name.split('.', 1)[1]
+                    all_article_text = all_article_text + self.get_text(child_node_gdpr_reference, add_markdown_decorators, footnote_pattern) + "\n\n"
+                return all_article_text
+
         if not self.reference_checker.is_valid(section_reference):
             return ""
 
@@ -81,7 +102,8 @@ class GDPR(Document):
     # Note: This method will not work correctly if empty values in the dataframe are NaN as is the case when loading
     #       a dataframe form a file without the 'na_filter=False' option. You should ensure that the dataframe does 
     #       not have any NaN value for the text fields. Try running self.document_as_df.isna().any().any() as a test before you get here
-    def get_heading(self, section_reference):
+    def get_heading(self, section_reference, add_markdown_decorators = False):
+        ## NOTE add_markdown_decorators not implemented 
         if not self.reference_checker.is_valid(section_reference):
             return ""
 
@@ -116,7 +138,7 @@ class GDPR(Document):
         chapter_number = ""
         article_number = 0
 
-        for index, row in df.iterrows():
+        for index, row in self.document_as_df.iterrows():
             if row["chapter_number"] != chapter_number:
                 chapter_number = row["chapter_number"]
                 section_number = ""
@@ -128,7 +150,7 @@ class GDPR(Document):
 
         gdpr_df_for_tree = pd.DataFrame(gdpr_data_for_tree, columns = ["section_reference", "heading", "text"])
 
-        return StandardTableOfContent(root_node_name = self.document_name, index_checker = self.GDPRToCReferenceChecker(), regulation_df = gdpr_df_for_tree)
+        return StandardTableOfContent(root_node_name = self.name, index_checker = self.GDPRToCReferenceChecker(), regulation_df = gdpr_df_for_tree)
 
     class GDPRReferenceChecker(ReferenceChecker):
         def __init__(self):

@@ -87,6 +87,7 @@ class CorpusChat():
         self.reset_conversation_history()
 
     def reset_conversation_history(self):
+        logger.log(ANALYSIS_LEVEL, f"{self.user_name}: Reset Conversation History")        
         self.messages = []
         self.messages_without_rag = []
         self.references = {}
@@ -149,7 +150,7 @@ class CorpusChat():
         elif number_of_options == 3:
             sys_instruction = f"{sys_instruction}1) {sys_option_ans}2) {sys_option_sec}3) {sys_option_none}"
         else:
-            logger.log(ANALYSIS_LEVEL, f"Forcing the number of options in the system message to be 3. They were {number_of_options}")
+            logger.log(DEV_LEVEL, f"Forcing the number of options in the system message to be 3. They were {number_of_options}")
             number_of_options == 3
             sys_instruction = f"{sys_instruction}1) {sys_option_ans}2) {sys_option_sec}3) {sys_option_none}"
 
@@ -527,6 +528,7 @@ class CorpusChat():
             self.system_state = CorpusChat.State.STUCK
             return
 
+        logger.log(ANALYSIS_LEVEL, f"{self.user_name} question: {user_content}")        
         workflow_triggered, df_definitions, df_search_sections = self.similarity_search(user_content) # df_search_sections MUST not have "document"
         if workflow_triggered == "documentation":
             raise NotImplementedError()
@@ -743,6 +745,7 @@ class CorpusChat():
         # Now update df_definitions, df_search_sections so that they only contained the sections referenced by the answer
         # df_definitions = df_definitions.iloc[used_definitions] I think I want to keep all the definitions
         df_search_sections = df_search_sections.iloc[used_sections]
+        df_definitions = df_definitions.iloc[used_definitions]
 
         # Reconstruct the answer with reformatted references
         formatted_references = f"  \nReference:  \n{reference_string}"

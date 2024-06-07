@@ -24,9 +24,12 @@ from regulations_rag.regulation_index import  EmbeddingParameters
 from gdpr_rag.corpus_index import GDPRCorpusIndex
 from gdpr_rag.corpus_chat import CorpusChat
 
+# App title - Must be first Streamlit command
+st.set_page_config(page_title="💬 GDPR Question Answering", layout="wide")
+
 
 if 'user_id' not in st.session_state:
-    st.session_state['user_id'] = ""
+    st.session_state['user_id'] = "test_user"
 
 
 ### Password
@@ -75,20 +78,6 @@ if "password_correct" not in st.session_state.keys():
 #     st.stop()
 
 
-# App title - Must be first Streamlit command
-st.set_page_config(page_title="💬 GDPR Question Answering", layout="wide")
-
-st.title('GDPR: Question Answering')
-
-if 'openai_api' not in st.session_state:
-    st.session_state['openai_client'] = OpenAI(api_key = st.secrets['openai']['OPENAI_API_KEY'])
-
-if 'selected_model' not in st.session_state.keys():
-    #st.session_state['model_options'] = ['gpt-4-0125-preview', 'gpt-4', 'gpt-3.5-turbo']
-    st.session_state['model_options'] = ['gpt-4o']
-    st.session_state['selected_model'] = 'gpt-4o'
-    st.session_state['selected_model_previous'] = 'gpt-4o'
-
 def load_data():
     logger.debug(f'--> cache_resource called again to reload data')
     with st.spinner(text="Loading the gdpr documents and index - hang tight! This should take 5 seconds."):
@@ -116,14 +105,23 @@ def load_data():
 
         return chat
 
+
+if 'openai_api' not in st.session_state:
+    st.session_state['openai_client'] = OpenAI(api_key = st.secrets['openai']['OPENAI_API_KEY'])
+
+if 'selected_model' not in st.session_state.keys():
+    #st.session_state['model_options'] = ['gpt-4-0125-preview', 'gpt-4', 'gpt-3.5-turbo']
+    st.session_state['model_options'] = ['gpt-4o']
+    st.session_state['selected_model'] = 'gpt-4o'
+    st.session_state['selected_model_previous'] = 'gpt-4o'
+
 if 'chat' not in st.session_state:
-    logger.debug('Adding \'Excon\' to keys')
     st.session_state['chat'] = load_data()
     st.session_state['chat'].chat_parameters.model = st.session_state['selected_model']
 
 
 
-
+st.title('GDPR: Question Answering')
 
 
 st.write(f"I am a bot designed to answer questions based on {st.session_state['chat'].index.corpus_description}. How can I assist today?")
@@ -162,25 +160,26 @@ for message in st.session_state.messages:
         if message["role"] == "assistant":
             ############################################################################
             response = message["content"]
-            all_references = st.session_state['chat'].references[response.strip()]
-
             # Split the answer into two parts: before "Reference:" and the references part
             parts = re.split(r'Reference:\s*', response, maxsplit=1)
-
             # Extract the text before "Reference:"
             answer_without_references = parts[0].strip()
-            st.write(answer_without_references)
+            st.markdown(answer_without_references)
 
-            # Extract the references part and split into lines
-            if len(parts) > 1:
-                references = parts[1].strip().split('\n')
-            else:
-                references = []
-            counter = 0
-            for reference in references:
-                with st.expander(reference.strip()):
-                    st.markdown(all_references.iloc[counter]['text'])
-                counter = counter + 1
+            if response.strip() in st.session_state['chat'].references:
+                all_references = st.session_state['chat'].references[response.strip()]
+
+                # Extract the references part and split into lines
+                if len(parts) > 1:
+                    references = parts[1].strip().split('\n')
+                else:
+                    references = []
+                counter = 0
+                for reference in references:
+                    with st.expander(reference.strip()):
+                        st.markdown(all_references.iloc[counter]['text'])
+                    counter = counter + 1
+
             ############################################################################
 
 
@@ -211,25 +210,26 @@ if prompt := st.chat_input():
 
                 ############################################################################
                 response = st.session_state['chat'].messages[-1]["content"]
-                all_references = st.session_state['chat'].references[response.strip()]
-
                 # Split the answer into two parts: before "Reference:" and the references part
                 parts = re.split(r'Reference:\s*', response, maxsplit=1)
-
                 # Extract the text before "Reference:"
                 answer_without_references = parts[0].strip()
                 st.markdown(answer_without_references)
 
-                # Extract the references part and split into lines
-                if len(parts) > 1:
-                    references = parts[1].strip().split('\n')
-                else:
-                    references = []
-                counter = 0
-                for reference in references:
-                    with st.expander(reference.strip()):
-                        st.markdown(all_references.iloc[counter]['text'])
-                    counter = counter + 1
+                if response.strip() in st.session_state['chat'].references:
+                    all_references = st.session_state['chat'].references[response.strip()]
+
+                    # Extract the references part and split into lines
+                    if len(parts) > 1:
+                        references = parts[1].strip().split('\n')
+                    else:
+                        references = []
+                    counter = 0
+                    for reference in references:
+                        with st.expander(reference.strip()):
+                            st.markdown(all_references.iloc[counter]['text'])
+                        counter = counter + 1
+
                 ############################################################################
 
 
