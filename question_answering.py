@@ -84,7 +84,8 @@ def load_data():
     logger.debug(f'--> cache_resource called again to reload data')
     with st.spinner(text="Loading the gdpr documents and index - hang tight! This should take 5 seconds."):
 
-        corpus_index = GDPRCorpusIndex()
+        key = st.secrets["index"]["decryption_key"]
+        corpus_index = GDPRCorpusIndex(key)
 
         rerank_algo = RerankAlgos.LLM
         rerank_algo.params["openai_client"] = st.session_state['openai_client']
