@@ -7,7 +7,8 @@ from regulations_rag.rerank import RerankAlgos
 
 class TestGDPRCorpusIndex():
 
-    index = GDPRCorpusIndex()
+    key = os.getenv('encryption_key_gdpr')
+    index = GDPRCorpusIndex(key)
     openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"),)
     embedding_parameters = EmbeddingParameters("text-embedding-3-large", 1024)
 

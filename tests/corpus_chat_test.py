@@ -24,7 +24,7 @@ class TestRegulationChat:
     key = os.getenv('encryption_key_gdpr')
 
 
-    corpus_index = GDPRCorpusIndex()
+    corpus_index = GDPRCorpusIndex(key)
 
 
     chat = CorpusChat(openai_client = openai_client, 
@@ -151,7 +151,7 @@ class TestRegulationChat:
         check_result =  self.chat._check_response(response, df_definitions=df_definitions, df_sections=df_search_sections)
         assert not check_result["success"]
         assert check_result["path"] == "NONE"
-        assert check_result["llm_followup_instruction"] == "Your response, did not begin with one of the keywords, 'ANSWER:', 'SECTION:' or 'NONE:'. Please review the question and provide an answer in the required format."
+        assert check_result["llm_followup_instruction"] == "Your response, did not begin with one of the keywords, 'ANSWER:', 'SECTION:' or 'NONE:'. Please review the question and provide an answer in the required format. Also make sure the referenced extracts are quoted at the end of the answer, not in the body, by number, in a comma separated list starting after the keyword 'Reference: '. Do not include the word Extract, only provide the number(s).\n"
 
         # Check ANSWER:
         path = "ANSWER:"

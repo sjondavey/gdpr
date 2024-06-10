@@ -33,8 +33,9 @@ if 'user_id' not in st.session_state:
 
 
 ### Password
-if "password_correct" not in st.session_state.keys():
-    st.session_state["password_correct"] = True
+# if "password_correct" not in st.session_state.keys():
+#     st.session_state["password_correct"] = True
+
 def check_password():
     """Returns `True` if the user had a correct password."""
 
@@ -79,6 +80,7 @@ if not check_password():
 
 
 def load_data():
+    logger.log(ANALYSIS_LEVEL, "*** Loading data. Should only happen once")
     logger.debug(f'--> cache_resource called again to reload data')
     with st.spinner(text="Loading the gdpr documents and index - hang tight! This should take 5 seconds."):
 
@@ -134,7 +136,7 @@ with st.sidebar:
     if st.session_state['selected_model'] != st.session_state['selected_model_previous']:
         st.session_state['selected_model_previous'] = st.session_state['selected_model']
         st.session_state['chat'].chat_parameters.model = st.session_state['selected_model']
-        logger.log(ANALYSIS_LEVEL, f"{st.session_state['user_id']} changed model and is now using {st.session_state['selected_model']}")
+        # logger.log(ANALYSIS_LEVEL, f"{st.session_state['user_id']} changed model and is now using {st.session_state['selected_model']}")
 
 
     temperature = 0.0
@@ -210,6 +212,8 @@ if prompt := st.chat_input():
 
                 ############################################################################
                 response = st.session_state['chat'].messages[-1]["content"]
+                logger.log(ANALYSIS_LEVEL, response)
+
                 # Split the answer into two parts: before "Reference:" and the references part
                 parts = re.split(r'Reference:\s*', response, maxsplit=1)
                 # Extract the text before "Reference:"
