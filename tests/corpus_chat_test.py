@@ -3,12 +3,9 @@ from openai import OpenAI
 import os
 from cryptography.fernet import Fernet
 
-# from regulations_rag.reference_checker import TESTReferenceChecker
-# from regulations_rag.regulation_reader import TESTReader, load_regulation_data_from_files
 from regulations_rag.regulation_chat import ChatParameters
 from regulations_rag.regulation_index import  EmbeddingParameters
 from regulations_rag.standard_regulation_index import load_parquet_data
-# from regulations_rag.standard_regulation_index import load_index_data_from_files, StandardRegulationIndex, load_parquet_data, save_parquet_data
 from regulations_rag.rerank import RerankAlgos
 
 from regulations_rag.corpus import Corpus
