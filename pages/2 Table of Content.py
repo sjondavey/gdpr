@@ -9,9 +9,6 @@ import streamlit_antd_components as sac
 from anytree import Node, PreOrderIter
 from regulations_rag.regulation_table_of_content import StandardTableOfContent
 
-from gdpr_rag.documents.gdpr import GDPR
-from gdpr_rag.documents.article_47_bcr import Article_47_BCR
-from gdpr_rag.documents.dpia import DPIA
 
 # If there is page reload, switch to a page where init_session was called.
 if 'chat' not in st.session_state:
