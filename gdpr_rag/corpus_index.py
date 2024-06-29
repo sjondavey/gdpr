@@ -14,12 +14,13 @@ logging.addLevelName(DEV_LEVEL, 'DEV')
 
 
 import os
-from regulations_rag.embeddings import get_closest_nodes
-from regulations_rag.standard_regulation_index import required_columns_workflow, load_parquet_data
-from regulations_rag.embeddings import num_tokens_from_string
+from regulations_rag.embeddings import get_closest_nodes, num_tokens_from_string
+from regulations_rag.file_tools import load_parquet_data
 
 from gdpr_rag.gdpr_corpus import GDPRCorpus
 import pandas as pd
+
+required_columns_workflow = ["workflow", "text", "embedding"]
 
 class GDPRCorpusIndex(CorpusIndex):
     def __init__(self, key):
@@ -179,3 +180,6 @@ class GDPRCorpusIndex(CorpusIndex):
             return get_closest_nodes(self.workflow, embedding_column_name = "embedding", content_embedding = user_content_embedding, threshold = threshold)
         else:
             return pd.DataFrame([], columns = required_columns_workflow)
+
+
+

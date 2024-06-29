@@ -7,20 +7,12 @@ import regex # fuzzy lookup of references in a section of text
 import copy
 from enum import Enum
 
-
-
-# import src.data
-# importlib.reload(src.data)
-from regulations_rag.regulation_index import RegulationIndex, EmbeddingParameters
-
 from regulations_rag.string_tools import match_strings_to_reference_list
-
-from regulations_rag.regulation_reader import RegulationReader
-                           
 from regulations_rag.embeddings import get_ada_embedding, \
                            get_closest_nodes, \
                            num_tokens_from_string,  \
-                           num_tokens_from_messages
+                           num_tokens_from_messages, \
+                           EmbeddingParameters
 
 from regulations_rag.rerank import RerankAlgos, rerank
 
@@ -82,6 +74,9 @@ class CorpusChat():
 
         self.index = corpus_index
         self.corpus = self.index.corpus
+        self.primary_document = self.corpus.get_primary_document()
+        self.has_primary_document = False
+        self.has_primary_document = self.primary_document != ""
 
         self.rerank_algo = rerank_algo
         self.reset_conversation_history()
@@ -141,8 +136,13 @@ class CorpusChat():
         else:
             sys_instruction = f"Please review your answer. You were asked to assist the user by responding to their question in 1 of {number_of_options} ways but your response does not follow the expected format. Please reformat your response so that it follows the requested format.\n" 
 
+        if self.has_primary_document:
+            sample_reference = self.corpus.get_document(self.primary_document).reference_checker.text_version
+        else:
+            sample_reference = "[Insert Reference Value Here]"
+        
         sys_option_ans  = f"Answer the question. Preface an answer with the tag '{CorpusChat.Prefix.ANSWER.value}'. All referenced extracts must be quoted at the end of the answer, not in the body, by number, in a comma separated list starting after the keyword 'Reference: '. Do not include the word Extract, only provide the number(s).\n"
-        sys_option_sec  = f"Request additional documentation. If, in the body of the extract(s) provided, there is a reference to another section that is directly relevant and not already provided, respond with the word '{CorpusChat.Prefix.SECTION.value}' followed by 'Extract extract_number, Reference section_reference' - for example SECTION: Extract 1, Reference Article 98.\n"
+        sys_option_sec  = f"Request additional documentation. If, in the body of the extract(s) provided, there is a reference to another section that is directly relevant and not already provided, respond with the word '{CorpusChat.Prefix.SECTION.value}' followed by 'Extract extract_number, Reference section_reference' - for example SECTION: Extract 1, Reference {sample_reference}.\n"
         sys_option_none = f"State '{CorpusChat.Prefix.NONE.value}' and nothing else in all other cases\n"
 
         if number_of_options == 2:
@@ -222,24 +222,22 @@ class CorpusChat():
                     document_name = df_sections.iloc[extract_number-len(df_definitions)-1]["document"]
                 doc = self.corpus.get_document(document_name)
                 section_reference = match.group(2)
-                # many cases will get a GDPR reference and that may start with the word 'Article'
-                if section_reference.lower().startswith("article "):
-                    section_reference = section_reference[8:]
 
-                if doc.reference_checker.is_valid(section_reference):
-                    return {"success": True, "path": prefix, "extract": extract_number, "document": document_name, "section": section_reference}
-                elif document_name != 'GDPR': # most articles will refer to GDPR so it makes sense to check if it is a GDPR reference as well
-                    gdpr_doc = self.corpus.get_document('GDPR')
-                    if gdpr_doc.reference_checker.is_valid(section_reference):
-                        return {"success": True, "path": prefix, "extract": extract_number, "document": 'GDPR', "section": section_reference}
-                
                 document_index = doc.reference_checker.text_version
-                if document_name != 'GDPR':
-                    gdpr_doc = self.corpus.get_document('GDPR')
+                if doc.reference_checker.is_valid(section_reference):
+                    section_reference = doc.reference_checker.extract_valid_reference(section_reference)
+                    return {"success": True, "path": prefix, "extract": extract_number, "document": document_name, "section": section_reference}
+                elif self.has_primary_document and document_name != self.primary_document: # articles in other documents can refer to the primary document so it makes sense to check if it is a primary document reference as well
+                    primary_doc = self.corpus.get_document(self.primary_document)
+                    if primary_doc.reference_checker.is_valid(section_reference):
+                        section_reference = primary_doc.reference_checker.extract_valid_reference(section_reference)
+                        return {"success": True, "path": prefix, "extract": extract_number, "document": self.primary_document, "section": section_reference}
+
                     if document_index == "":
-                        document_index = gdpr_doc.reference_checker.text_version
+                        document_index = primary_doc.reference_checker.text_version
                     else:
-                        document_index += ", or " + self.corpus.get_document('GDPR').reference_checker.text_version
+                        document_index += ", or " + primary_doc.reference_checker.text_version
+
                 llm_instruction = f'The reference {section_reference} does not appear to be a valid reference for the document. Try using the format {document_index}'
                 return {"success": False, "path": prefix, "llm_followup_instruction": llm_instruction} 
             else:
@@ -344,45 +342,34 @@ class CorpusChat():
 
         return workflow_triggered, relevant_definitions, relevant_sections
 
-    def _get_api_response(self, messages, testing=False, manual_responses_for_testing=[], response_index=0):
+    def _get_api_response(self, messages):
         """
         Fetches a response from the OpenAI API or uses a canned response based on the testing flag.
 
         Parameters:
         - messages (list): The list of messages to send as context to the OpenAI API.
-        - testing (bool): Flag to determine whether to use the OpenAI API or canned responses.
-        - manual_responses_for_testing (list of str): A list of canned responses to use if testing is True.
-        - response_index (int): The index of the response to use from manual_responses_for_testing.
 
         Returns:
-        - str: The response from the OpenAI API or the selected canned response.
-
-        NOTE: In some tests I want a manual response to the first call so that I can test the rest of the code. To do that
-              I set testing = True but only pass one message in manual_responses_for_testing 
+        - str: The response from the OpenAI API.
         """
-        if testing and response_index < len(manual_responses_for_testing):
-            # NOTE: In some tests I force the first response but want to test the API call on the second attempt 
-            #       so I set testing = True but only pass one message in manual_responses_for_testing 
-            response_text = manual_responses_for_testing[response_index]
-        else:
-            model_to_use = self.chat_parameters.model
-            total_tokens = num_tokens_from_messages(messages, model_to_use)
-            
-            if total_tokens > 15000:
-                return "The is too much information in the prompt so we are unable to answer this question. Please try again or word the question differently"
+        model_to_use = self.chat_parameters.model
+        total_tokens = num_tokens_from_messages(messages, model_to_use)
+        
+        if total_tokens > 15000:
+            return "The is too much information in the prompt so we are unable to answer this question. Please try again or word the question differently"
 
-            # Adjust model based on token count, similar to your original logic
-            if (model_to_use in ["gpt-3.5-turbo", "gpt-4"]) and total_tokens > 3500:
-                logger.warning("Switching to the gpt-3.5-turbo-16k model due to long prompt.")                
-                model_to_use = "gpt-3.5-turbo-16k"
-            
-            response = self.openai_client.chat.completions.create(
-                            model=model_to_use,
-                            temperature=self.chat_parameters.temperature,
-                            max_tokens=self.chat_parameters.max_tokens,
-                            messages=messages
-                        )
-            response_text = response.choices[0].message.content
+        # Adjust model based on token count, similar to your original logic
+        if (model_to_use in ["gpt-3.5-turbo", "gpt-4"]) and total_tokens > 3500:
+            logger.warning("Switching to the gpt-3.5-turbo-16k model due to long prompt.")                
+            model_to_use = "gpt-3.5-turbo-16k"
+        
+        response = self.openai_client.chat.completions.create(
+                        model=model_to_use,
+                        temperature=self.chat_parameters.temperature,
+                        max_tokens=self.chat_parameters.max_tokens,
+                        messages=messages
+                    )
+        response_text = response.choices[0].message.content
         return response_text
 
     def _truncate_message_list(self, system_message, message_list, token_limit=2000):
@@ -476,7 +463,11 @@ class CorpusChat():
             system_message = [{"role": "system", "content": system_content}]
             truncated_chat = self._truncate_message_list(system_message, chat_messages, 2000)
 
-            response = self._get_api_response(messages = truncated_chat, testing=testing, manual_responses_for_testing=manual_responses_for_testing, response_index = 0)
+            if testing and len(manual_responses_for_testing) > 0:
+                response = manual_responses_for_testing[0]
+            else:
+                response = self._get_api_response(messages = truncated_chat)
+
             check_result = self._check_response(response, df_definitions=df_definitions, df_sections=df_search_sections)
             if check_result["success"]:
                 check_result["question"] = user_question
@@ -491,8 +482,12 @@ class CorpusChat():
             despondent_user_messages = truncated_chat + [
                                         {"role": "assistant", "content": response},
                                         {"role": "user", "content": check_result["llm_followup_instruction"]}]
-                                        
-            response = self._get_api_response(messages = despondent_user_messages, testing=testing, manual_responses_for_testing=manual_responses_for_testing, response_index = 1)
+
+            if testing and len(manual_responses_for_testing) > 1:
+                response = manual_responses_for_testing[1]
+            else:
+                response = self._get_api_response(messages = despondent_user_messages)
+
             check_result = self._check_response(response, df_definitions=df_definitions, df_sections=df_search_sections)
             if check_result["success"]:
                 return check_result
@@ -528,20 +523,19 @@ class CorpusChat():
             self.system_state = CorpusChat.State.STUCK
             return
 
-        logger.log(ANALYSIS_LEVEL, f"{self.user_name} question: {user_content}")        
-        workflow_triggered, df_definitions, df_search_sections = self.similarity_search(user_content) # df_search_sections MUST not have "document"
-        if workflow_triggered == "documentation":
-            raise NotImplementedError()
-            # user_content = self.enrich_user_request_for_documentation(user_content, self.messages_without_rag)
-            # workflow_triggered, df_definitions, df_search_sections = self.similarity_search(user_content)
-
-
         if self.system_state == CorpusChat.State.STUCK:
             self.append_content("user", user_content)
             self.append_content("assistant", CorpusChat.Errors.STUCK.value)
             return 
 
         elif self.system_state == CorpusChat.State.RAG:            
+            logger.log(ANALYSIS_LEVEL, f"{self.user_name} question: {user_content}")        
+            workflow_triggered, df_definitions, df_search_sections = self.similarity_search(user_content) # df_search_sections MUST not have "document"
+            if workflow_triggered == "documentation":
+                raise NotImplementedError()
+                # user_content = self.enrich_user_request_for_documentation(user_content, self.messages_without_rag)
+                # workflow_triggered, df_definitions, df_search_sections = self.similarity_search(user_content)
+
             if len(self.messages) < 2 and (len(df_definitions) + len(df_search_sections) == 0):
                 logger.log(DEV_LEVEL, "Note: Unable to find any definitions or text related to this query")
                 self.system_state = CorpusChat.State.RAG         
@@ -608,7 +602,7 @@ class CorpusChat():
                     
                     else: 
                         logger.info("Note: Even with the additional information, they system was unable to answer the question. Placing the system in 'stuck' mode")
-                        logger.info(f"The response from the query with additional resources was: \n{response}")
+                        logger.info(f"The response from the query with additional resources was: \n{result}")
                         msg = "A call for additional sections did not result in sufficient information to answer the question. The system is now stuck. Please clear the chat history and retry your query"
                         self.append_content("assistant", msg)
                         self.system_state = CorpusChat.State.STUCK
@@ -680,8 +674,9 @@ class CorpusChat():
 
         if result["extract"] > len(df_definitions): # Delete the other sections, keep the referring section and the new data
             row_to_keep = result["extract"] - len(df_definitions) - 1
-            sections_to_keep = df_search_sections.iloc[[row_to_keep]]
-            new_sections = pd.concat([sections_to_keep, new_sections], ignore_index = True)
+        # sections_to_keep = df_search_sections.iloc[[row_to_keep]]
+        sections_to_keep = df_search_sections # keep everything - the context window is long enough
+        new_sections = pd.concat([sections_to_keep, new_sections], ignore_index = True)
 
         return new_sections
 
@@ -695,7 +690,7 @@ class CorpusChat():
         replaces it with the closest match from a list of provided references, and removes duplicates.
 
         Parameters:
-        - result = {"success": True, "path": "ANSWER:"", "answer": llm_text, "reference": references_as_integers}
+        - result = {"success": True, "path": "ANSWER:", "answer": llm_text_without_references, "reference": references_as_integers}
         - df_definitions
         - sections_in_rag (list): A list of correctly formatted reference sections.
 

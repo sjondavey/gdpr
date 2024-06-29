@@ -1,8 +1,8 @@
 import os
+import pandas as pd
 from openai import OpenAI
 from gdpr_rag.corpus_index import GDPRCorpusIndex
-from regulations_rag.regulation_index import EmbeddingParameters
-from regulations_rag.embeddings import get_ada_embedding
+from regulations_rag.embeddings import get_ada_embedding, EmbeddingParameters
 from regulations_rag.rerank import RerankAlgos
 
 class TestGDPRCorpusIndex():

@@ -1,6 +1,5 @@
 import re
 import pandas as pd
-from regulations_rag.regulation_reader import  load_csv_data
 from regulations_rag.document import Document
 from regulations_rag.reference_checker import ReferenceChecker
 from regulations_rag.reference_checker import MultiReferenceChecker
@@ -12,8 +11,6 @@ class Protection(Document):
 
         reference_checker =  self.ProtectionReferenceChecker()
 
-
-        #self.document_as_df = load_csv_data(path_to_file = path_to_manual_as_csv_file)
         self.document_as_df = pd.read_parquet(path_to_manual_as_csv_file, engine = 'pyarrow')
 
         document_name = "Guidelines 4/2019 on Article 25 Data Protection by Design and by Default Version 2.0"
