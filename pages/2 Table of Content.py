@@ -109,7 +109,7 @@ st.write(get_text_for_node(selected), unsafe_allow_html=True)
 
 #     reference_checker = doc.reference_checker
 #     df = doc.document_as_df
-#     toc = StandardTableOfContent(root_node_name = "root", index_checker = reference_checker, regulation_df = df)
+#     toc = StandardTableOfContent(root_node_name = "root", reference_checker = reference_checker, regulation_df = df)
 
 
 #     sac.tree(items=[

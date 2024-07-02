@@ -39,7 +39,7 @@ class DecisionMaking(Document):
         return super().get_heading(section_reference, add_markdown_decorators)
 
     def get_toc(self):
-        return StandardTableOfContent(root_node_name = self.name, index_checker = self.reference_checker, regulation_df = self.document_as_df)
+        return StandardTableOfContent(root_node_name = self.name, reference_checker = self.reference_checker, regulation_df = self.document_as_df)
 
 
 

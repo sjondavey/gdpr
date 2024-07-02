@@ -9,7 +9,7 @@ from regulations_rag.file_tools import load_parquet_data
 from regulations_rag.rerank import RerankAlgos
 
 from regulations_rag.corpus import Corpus
-from gdpr_rag.corpus_chat import CorpusChat
+from regulations_rag.corpus_chat import CorpusChat
 from gdpr_rag.corpus_index import GDPRCorpusIndex
 
 class TestRegulationChat:

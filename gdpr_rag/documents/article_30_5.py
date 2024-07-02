@@ -45,5 +45,5 @@ class Article_30_5(Document):
             return ""
 
     def get_toc(self):
-        return StandardTableOfContent(root_node_name = self.name, index_checker = self.reference_checker, regulation_df = self.document_as_df)
+        return StandardTableOfContent(root_node_name = self.name, reference_checker = self.reference_checker, regulation_df = self.document_as_df)
 
