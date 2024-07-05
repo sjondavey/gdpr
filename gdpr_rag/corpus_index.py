@@ -28,6 +28,12 @@ class GDPRCorpusIndex(DataFrameCorpusIndex):
         corpus_description = "the General Data Protection Regulation (GDPR)"
 
         definitions = index_df[index_df['source'] == 'definitions'].copy(deep=True)
+        # I now need to add the actual definitions in using the get_test method
+        doc = corpus.get_document("GDPR")
+        definitions['definition'] = definitions['section_reference'].apply(lambda x: doc.get_text(section_reference = x, add_markdown_decorators = False, add_headings = False))
+        # ... except the get_text method adds some stuff before the defn so I strip it out
+        definitions['definition'] = definitions['definition'].str.replace(r'^\s*\d+\.\s*', '', regex=True)
+
         index = index_df[index_df['source'] != 'definitions'].copy(deep=True)
         workflow = pd.DataFrame([], columns = required_columns_workflow)
 
