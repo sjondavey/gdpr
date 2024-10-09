@@ -8,6 +8,7 @@ https://www.edpb.europa.eu/our-work-tools/consistency-findings/register-for-arti
 https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A52020DC0264
 https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A52020SC0115
 
+https://ico.org.uk/
 
 ## Brain dump
 
