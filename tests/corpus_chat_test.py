@@ -1,6 +1,8 @@
 import pandas as pd
 from openai import OpenAI
 import os
+from unittest.mock import patch
+
 from cryptography.fernet import Fernet
 
 from regulations_rag.corpus_chat import ChatParameters
@@ -35,36 +37,35 @@ class TestRegulationChat:
         assert True
 
 
-    def test_resource_augmented_query(self):
+    @patch.object(CorpusChat, '_get_api_response')
+    def test_resource_augmented_query(self, mock__get_api_response):
         self.chat.reset_conversation_history()
         self.chat.system_state = self.chat.State.RAG
 
         user_content = "Are there exemptions from GDPR for small companies?"
         workflow_triggered, relevant_definitions, relevant_sections = self.chat.similarity_search(user_content)
 
-        if self.include_calls_to_api: # also test it with a call to the API
-            result = self.chat.resource_augmented_query(user_question = user_content,
-                                                          df_definitions = relevant_definitions, 
-                                                          df_search_sections = relevant_sections)
-            assert result["success"]
-            assert result["path"] == "ANSWER:"
-            #assert result["answer"] == "test to see what happens when if the API believes it successfully answered the question with the resources provided"
-            assert len(result["reference"]) > 0
-
-
-            # Manually force the first API response to get to the second loop, then test the second API call
-            # NOTE: I am not going to test the openai api call. I am going to use 'testing' mode with canned answers
-            testing = True
-            manual_responses_for_testing = []
-            manual_responses_for_testing.append("Yes. There are exemptions for small companies.")
-            result = self.chat.resource_augmented_query(user_question = "Are there exemptions from GDPR for small companies?", 
+        mock__get_api_response.return_value = "ANSWER: There are exemptions for small companies."
+        result = self.chat.resource_augmented_query(user_question = user_content,
                                                         df_definitions = relevant_definitions, 
-                                                        df_search_sections = relevant_sections,
-                                                        testing = testing,
-                                                        manual_responses_for_testing = manual_responses_for_testing)
-            assert result["success"]
-            assert result["path"] == "ANSWER:"
-            #assert result["answer"] == "test to see what happens when if the API believes it successfully answered the question with the resources provided"
-            assert len(result["reference"]) > 0
+                                                        df_search_sections = relevant_sections)
+        assert result["success"]
+        assert result["path"] == "ANSWER:"
+        assert result["answer"] == "There are exemptions for small companies."
+        assert len(result["reference"]) == 0
+
+        # Check that that the system initially does not listen, that it makes it to the second step: 
+        mock__get_api_response.side_effect = [
+            "Yes. There are exemptions for small companies.", 
+            "ANSWER: After checking my previous answer, there are exemptions for small companies."
+            ]
+
+        result = self.chat.resource_augmented_query(user_question = "Are there exemptions from GDPR for small companies?", 
+                                                    df_definitions = relevant_definitions, 
+                                                    df_search_sections = relevant_sections)
+        assert result["success"]
+        assert result["path"] == "ANSWER:"
+        assert result["answer"] == "After checking my previous answer, there are exemptions for small companies."
+        assert len(result["reference"]) == 0
 
 
