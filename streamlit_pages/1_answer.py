@@ -84,11 +84,42 @@ def clear_chat_history():
     st.session_state['messages'] = [] 
     write_session_data_to_blob('{"role": "action", "content": "Clear history"}')
 
-st.sidebar.button('Clear Chat History', on_click=clear_chat_history)
+
 with st.sidebar:
+
+    # Create a custom container for the RAG enforcement option
+    rag_container = st.container()
+    with rag_container:
+        col1, col2 = st.columns([3, 2])
+        with col1:
+            st.markdown(
+                "<h3 style='text-align: left; color: #4A90E2; margin-bottom: 0;'>RAG Enforcement:</h3>",
+                unsafe_allow_html=True,
+                help="Strict: LLM only answers if references are found. Permissive: LLM can respond without references."
+            )
+        with col2:
+            # Initialize session state for RAG mode if it doesn't exist
+            if 'rag_mode' not in st.session_state:
+                st.session_state.rag_mode = 'Permissive'
+            
+            # Use selectbox for RAG mode selection
+            st.session_state.rag_mode = st.selectbox(
+                'RAG Mode',
+                options=['Permissive', 'Strict'],
+                index=0 if st.session_state.rag_mode == 'Permissive' else 1,
+                key='rag_mode_select',
+                label_visibility='collapsed'
+            )
+        
+        # Update the CorpusChat instance with the new strict_rag value
+        st.session_state['chat'].strick_rag = (st.session_state.rag_mode == 'Strict')
+
+    st.button('Clear Chat History', on_click=clear_chat_history)
     st.markdown(f'Answers *only* if references can be found the reference documents (see the Table of Content page or <a href="https://www.edpb.europa.eu/our-work-tools/general-guidance/guidelines-recommendations-best-practices_en" target="_blank">here</a>)', unsafe_allow_html=True)
     st.markdown('This public version does not contain country specific guidelines and only works in English')
     st.markdown('**Press the "Clear Chat History" button before you change topic**')
+
+
 
 def make_call_to_chat(prompt):
     logger.debug(f"Making call with prompt: {prompt}")                            
@@ -97,15 +128,15 @@ def make_call_to_chat(prompt):
     llm_reply = raw_response['content']
     df_definitions = raw_response['definitions']
     df_search_sections = raw_response['sections']
-    response_dict = st.session_state['chat']._check_response(llm_reply, df_definitions, df_search_sections)
+    response_dict = st.session_state['chat'].check_response(llm_reply, df_definitions, df_search_sections)
     row_to_add_to_messages = {}
-    llm_response_formatted_for_logs = st.session_state['chat']._reformat_assistant_answer(response_dict, df_definitions, df_search_sections)
+    llm_response_formatted_for_logs = st.session_state['chat'].reformat_assistant_answer(response_dict, df_definitions, df_search_sections)
     if hasattr(st.session_state['chat'].Prefix, 'ALTERNATIVE') and  response_dict['path'] == st.session_state['chat'].Prefix.ALTERNATIVE.value:
-        llm_answer, other_suggestions = st.session_state['chat']._extract_assistant_answer_and_references(response_dict, df_definitions, df_search_sections)
+        llm_answer, other_suggestions = st.session_state['chat'].extract_assistant_answer_and_references(response_dict, df_definitions, df_search_sections)
         assistant_response = llm_answer # llm_response_formatted_for_logs
         row_to_add_to_messages = {"role": "assistant", "content": assistant_response, "section_reference": pd.DataFrame(), "alternative_phrasing": other_suggestions}
     else:
-        llm_answer, df_references_list = st.session_state['chat']._extract_assistant_answer_and_references(response_dict, df_definitions, df_search_sections)
+        llm_answer, df_references_list = st.session_state['chat'].extract_assistant_answer_and_references(response_dict, df_definitions, df_search_sections)
         row_to_add_to_messages = {"role": "assistant", "content": response_dict['answer'], "section_reference": df_references_list}
 
     st.session_state['messages'].append(row_to_add_to_messages)

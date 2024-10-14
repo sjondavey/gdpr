@@ -37,15 +37,15 @@ class TestRegulationChat:
         assert True
 
 
-    @patch.object(CorpusChat, '_get_api_response')
-    def test_resource_augmented_query(self, mock__get_api_response):
+    @patch.object(CorpusChat, 'get_api_response')
+    def test_resource_augmented_query(self, mock_get_api_response):
         self.chat.reset_conversation_history()
         self.chat.system_state = self.chat.State.RAG
 
         user_content = "Are there exemptions from GDPR for small companies?"
         workflow_triggered, relevant_definitions, relevant_sections = self.chat.similarity_search(user_content)
 
-        mock__get_api_response.return_value = "ANSWER: There are exemptions for small companies."
+        mock_get_api_response.return_value = "ANSWER: There are exemptions for small companies."
         result = self.chat.resource_augmented_query(user_question = user_content,
                                                         df_definitions = relevant_definitions, 
                                                         df_search_sections = relevant_sections)
@@ -55,7 +55,7 @@ class TestRegulationChat:
         assert len(result["reference"]) == 0
 
         # Check that that the system initially does not listen, that it makes it to the second step: 
-        mock__get_api_response.side_effect = [
+        mock_get_api_response.side_effect = [
             "Yes. There are exemptions for small companies.", 
             "ANSWER: After checking my previous answer, there are exemptions for small companies."
             ]
