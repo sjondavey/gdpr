@@ -1,24 +1,47 @@
-https://www.edpb.europa.eu/our-work-tools/general-guidance/guidelines-recommendations-best-practices_en
+This is a working project for the application GDPR_RAG. 
 
+Don't bother with this project. It is messy and just contains my brain dump.
 
-https://www.edpb.europa.eu/about-edpb/publications/one-stop-shop-case-digests_en
-Final One Stop Shop Decisions
-https://www.edpb.europa.eu/our-work-tools/consistency-findings/register-for-article-60-final-decisions_en
+## Web front end
+The web front end uses Streamlit and has been coded to run on the Streamlit Community Cloud or in Azure (with logging and analytics persisted to Blob Storage)
 
-https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A52020DC0264
-https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A52020SC0115
+### Azure
+Azure is useful if you want to persist logs and user information. Streamlit Community Cloud does offer access to logs, but they are only available while the application is awake. As soon as it goes to sleep, the logs are lost.
 
-https://ico.org.uk/
+Initially, I intended to use Azure Authentication Services. While some hooks for this may still exist in this code, it has not been used and will probably not work.
 
-## Brain dump
+To run the Azure front end locally, run `streamlit run .\app.py azure` from the command line. From an Azure Web App, use the startup Command `python -m streamlit run app.py azure --server.port 8000 --server.address 0.0.0.0` under Settings / Configuration.
 
-There are lots of documents about GDPR [^1]. I need
-1) A place for the original (pdf / web text etc): Folder ./original/
-2) A notebook to 
-    a) convert the original into a dataframe; folder ./inputs/documents/     
-    b) to create summaries and questions that can be added to the document index (QUESTION: is this one file / table or one per document?) ./inputs/
-   There notebooks are to be saved in folder ./conversion_notebooks/
-3) A document.py wrapper for the dataframe version of the document ./gdpr_rag/documents/
-4) A naming convention that that allows a script to check that each original document has been converted into a dataframe, has a document.py wrapper and has been added to the document index. This should also check that there are no additional entries in the document index etc.
+Given the overhead when establishing connections to various services in Azure (e.g. keyvault), this frontend makes use of environmental variables. You need the following variables:
+```
+OPENAI_API_KEY_GDPR = '...'
+DECRYPTION_KEY_GDPR = '...'
+BLOB_ACCOUNT_URL = '...'
+CHAT_BLOB_STORE = '...'
+BLOB_CONTAINER = '...'
+```
 
-[^1]: Here is footnote 1
+When running locally, you need to create a `.env` file and use load_dotenv. In an Azure Web App, create the variables (Settings / Environment variables). Note that adding a variable feels like a two-step process: add it and then save the changes. When a variable is added, you also seem to need to redeploy the app, so it's easiest to create all the variables up front before your initial deployment.
+
+### Streamlit
+I make use of the secrets.toml file in a .streamlit folder. That file should look like this:
+```
+[openai]
+OPENAI_API_KEY = "..."
+
+[index]
+decryption_key = '...'
+
+[passwords]
+user_name = "bcrypt encoded password"
+```
+Note there is no Blob store to log to when using Streamlit, but there is a really basic authorization step. I could not get a [more robust authentication method to work](https://github.com/mkhorasani/Streamlit-Authenticator/issues/99). If you don't want the password, change the line `setup_for_streamlit(True)` in app.py to `setup_for_streamlit(False)`.
+
+### Useful references
+1. https://www.edpb.europa.eu/our-work-tools/general-guidance/guidelines-recommendations-best-practices_en
+2. https://www.edpb.europa.eu/about-edpb/publications/one-stop-shop-case-digests_en
+3. https://www.edpb.europa.eu/our-work-tools/consistency-findings/register-for-article-60-final-decisions_en (Final One Stop Shop Decisions)
+4. https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A52020DC0264
+5. https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A52020SC0115
+6. https://ico.org.uk/
+
