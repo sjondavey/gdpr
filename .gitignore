@@ -1,0 +1,15 @@
+
+.streamlit/
+__pycache__/
+
+# Unit test / coverage reports
+.pytest_cache/
+
+.env
+/env
+/logs
+/working
+/tmp
+
+/pdf
+/regs
