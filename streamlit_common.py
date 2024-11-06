@@ -105,7 +105,7 @@ def setup_for_streamlit(insist_on_password = False):
     if 'corpus_decryption_key' not in st.session_state:
         st.session_state['corpus_decryption_key'] = st.secrets["index"]["decryption_key"]
 
-    if 'openai_api' not in st.session_state:
+    if 'openai_key' not in st.session_state:
         st.session_state['openai_key'] = st.secrets['openai']['OPENAI_API_KEY']
 
         if not insist_on_password:
